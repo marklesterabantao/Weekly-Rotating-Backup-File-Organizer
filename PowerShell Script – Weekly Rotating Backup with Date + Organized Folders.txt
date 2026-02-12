@@ -1,0 +1,71 @@
+# ---------------------------
+# Settings
+# ---------------------------
+$source = "$env:USERPROFILE\Desktop"       # Source folder
+$backupRoot = Join-Path $source "Backup"   # Root backup folder
+
+# Get current day and date
+$today = Get-Date
+$dayOfWeek = $today.DayOfWeek.ToString()   # e.g., Monday
+$dateStr = $today.ToString("MMddyyyy")     # e.g., 02092026
+
+# Backup folder name: Monday 02092026
+$backupFolderName = "$dayOfWeek $dateStr"
+$backupFolder = Join-Path $backupRoot $backupFolderName
+
+# Create / overwrite backup folder for today
+New-Item -ItemType Directory -Force -Path $backupFolder | Out-Null
+
+# ---------------------------
+# Backup Files
+# ---------------------------
+Get-ChildItem $source -File | ForEach-Object {
+    Copy-Item $_.FullName -Destination $backupFolder -Force
+}
+
+Write-Host "Backup completed at $backupFolder"
+
+# ---------------------------
+# Create Organized Folders
+# ---------------------------
+$documentsRoot = Join-Path $source "Documents"
+$imagesRoot = Join-Path $source "Images"
+
+New-Item -ItemType Directory -Force -Path $documentsRoot | Out-Null
+New-Item -ItemType Directory -Force -Path $imagesRoot | Out-Null
+
+# ---------------------------
+# File Type Mapping
+# ---------------------------
+$fileMap = @{
+    "docx" = "$documentsRoot\DOCS FOLDER"
+    "doc"  = "$documentsRoot\DOCS FOLDER"
+    "pptx" = "$documentsRoot\PPT FOLDER"
+    "ppt"  = "$documentsRoot\PPT FOLDER"
+    "xlsx" = "$documentsRoot\EXCEL FOLDER"
+    "xls"  = "$documentsRoot\EXCEL FOLDER"
+    "pdf"  = "$documentsRoot\PDF FOLDER"
+    "txt"  = "$documentsRoot\TXT FOLDER"
+    "jpg"  = "$imagesRoot\JPG FOLDER"
+    "jpeg" = "$imagesRoot\JPEG FOLDER"
+    "png"  = "$imagesRoot\PNG FOLDER"
+    "gif"  = "$imagesRoot\GIF FOLDER"
+    "bmp"  = "$imagesRoot\BMP FOLDER"
+}
+
+# Create all subfolders
+$fileMap.Values | Sort-Object -Unique | ForEach-Object {
+    New-Item -ItemType Directory -Force -Path $_ | Out-Null
+}
+
+# ---------------------------
+# Move files based on extension
+# ---------------------------
+Get-ChildItem $source -File | ForEach-Object {
+    $extension = $_.Extension.TrimStart(".").ToLower()
+    if ($fileMap.ContainsKey($extension)) {
+        Move-Item $_.FullName -Destination $fileMap[$extension] -Force
+    }
+}
+
+Write-Host "Files organized by type successfully!"
